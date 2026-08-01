@@ -1,11 +1,377 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import '../styles/global.css';
+import { getCollection, render } from 'astro:content';
+
+const projects = await getCollection('projects');
+
+const hardwareProjects = projects.filter(p => p.data.category === 'hardware');
+const softwareProjects = projects.filter(p => p.data.category === 'software');
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Montsho's Portfolio Dashboard</title>
+    </head>
+    <body class="bg-slate-900 text-white p-10 font-sans selection:bg-cyan-500 selection:text-white">
+        <main class="max-w-4xl mx-auto">
+            <header class="mb-8">
+                <h1 class="text-4xl font-bold mb-2">Hi, I'm Montsho. Welcome to my portfolio!</h1>
+                <p class="text-xl text-slate-400">Computer Systems Engineering Student & Junior Software Developer</p>
+            </header>
+
+            <!-- Tier 1: Main Category Selector -->
+            <div class="flex gap-4 mb-8 border-b border-slate-800 pb-4">
+                <button 
+                    class="main-category-btn px-6 py-3 rounded-xl bg-cyan-600 text-white font-bold text-base transition-all shadow-lg cursor-pointer" 
+                    data-target="hardware-section">
+                    ⚙️ Hardware Projects ({hardwareProjects.length})
+                </button>
+                <button 
+                    class="main-category-btn px-6 py-3 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 font-bold text-base transition-all border border-slate-700 cursor-pointer" 
+                    data-target="software-section">
+                    💻 Software Projects ({softwareProjects.length})
+                </button>
+            </div>
+
+            <!-- ================= HARDWARE SECTION ================= -->
+            <div id="hardware-section" class="category-section">
+                {hardwareProjects.length > 0 ? (
+                    <div class="border border-slate-700 p-6 rounded-2xl bg-slate-800/60 backdrop-blur shadow-2xl">
+                        <h2 class="text-xl font-semibold mb-4 text-cyan-400">Select Hardware Project:</h2>
+                        
+                        <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-700 pb-4">
+                            {hardwareProjects.map((project, idx) => (
+                                <button 
+                                    class={`proj-tab-btn-${idx} px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${idx === 0 ? 'bg-cyan-600 text-white shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}
+                                    onclick={`switchProject('hardware', ${idx})`}>
+                                    Project {idx + 1}: {project.data.title}
+                                </button>
+                            ))}
+                        </div>
+
+                        {hardwareProjects.map(async (project, idx) => {
+                            const { Content } = await render(project);
+                            const mediaList = project.data.media || [];
+                            return (
+                                <div class={`hardware-proj-pane-${idx} ${idx === 0 ? '' : 'hidden'}`}>
+                                    <div class="flex justify-between items-start mb-4">
+                                        <h3 class="text-2xl font-bold">{project.data.title}</h3>
+                                        <span class="text-xs uppercase tracking-wider px-3 py-1 rounded bg-slate-900 text-cyan-400 font-semibold border border-slate-700">
+                                            Hardware
+                                        </span>
+                                    </div>
+
+                                    <!-- Inside-Project Tabs -->
+                                    <div class="flex border-b border-slate-700 mb-6">
+                                        <button 
+                                            class={`inner-tab-btn-${idx} px-4 py-2 text-sm font-semibold text-cyan-400 border-b-2 border-cyan-400 transition-all cursor-pointer`}
+                                            onclick={`switchInnerTab('hardware', ${idx}, 'desc')`}>
+                                            Project Description
+                                        </button>
+                                        <button 
+                                            class={`inner-tab-btn-${idx} px-4 py-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-all cursor-pointer`}
+                                            onclick={`switchInnerTab('hardware', ${idx}, 'tech')`}>
+                                            Tech Stack
+                                        </button>
+                                    </div>
+
+                                    <!-- Description Pane -->
+                                    <div class={`hardware-desc-pane-${idx}`}>
+                                        <!-- Scrollable Media Carousel Library -->
+                                        {mediaList.length > 0 && (
+                                            <div class="mb-6 relative bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-lg group">
+                                                <div class="carousel-container relative w-full overflow-hidden flex items-center justify-center min-h-[300px] max-h-[450px]">
+                                                    {mediaList.map((item, mIdx) => (
+                                                        <div class={`carousel-item-${idx} w-full flex items-center justify-center ${mIdx === 0 ? '' : 'hidden'}`} data-index={mIdx}>
+                                                            {item.type === 'image' ? (
+                                                                <img src={item.url} alt="Project Media" class="w-full h-auto object-contain max-h-[420px]" />
+                                                            ) : (
+                                                                <video controls class="w-full h-auto max-h-[420px]">
+                                                                    <source src={item.url} type="video/mp4" />
+                                                                    Your browser does not support the video tag.
+                                                                </video>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Carousel Left / Right Buttons */}
+                                                {mediaList.length > 1 && (
+                                                    <>
+                                                        <button 
+                                                            class="absolute left-3 top-1/2 -translate-y-1/2 bg-slate-800/80 hover:bg-cyan-600 text-white p-2.5 rounded-full shadow transition-all cursor-pointer"
+                                                            onclick={`moveCarousel('hardware', ${idx}, -1, ${mediaList.length})`}>
+                                                            ❮
+                                                        </button>
+                                                        <button 
+                                                            class="absolute right-3 top-1/2 -translate-y-1/2 bg-slate-800/80 hover:bg-cyan-600 text-white p-2.5 rounded-full shadow transition-all cursor-pointer"
+                                                            onclick={`moveCarousel('hardware', ${idx}, 1, ${mediaList.length})`}>
+                                                            ❯
+                                                        </button>
+                                                        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-slate-900/80 px-3 py-1 rounded-full text-xs text-slate-300 border border-slate-700">
+                                                            Media <span class={`carousel-indicator-${idx}`}>1</span> of {mediaList.length}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div class="prose prose-invert max-w-none text-slate-300 leading-relaxed">
+                                            <Content />
+                                        </div>
+                                    </div>
+
+                                    <!-- Tech Stack Pane -->
+                                    <div class={`hardware-tech-pane-${idx} hidden`}>
+                                        <p class="text-sm text-slate-400 mb-4">Hardware components & programming languages utilized:</p>
+                                        <div class="flex flex-wrap gap-2 mb-6">
+                                            {project.data.hardwares?.map((hw: string) => (
+                                                <span class="bg-cyan-950 text-cyan-200 text-sm px-3.5 py-2 rounded-xl font-medium border border-cyan-800 shadow">
+                                                    🖥️ {hw}
+                                                </span>
+                                            ))}
+                                            {project.data.techStack?.map((tech: string) => (
+                                                <span class="bg-slate-900 text-sm px-3.5 py-2 rounded-xl text-slate-300 font-medium border border-slate-700 shadow">
+                                                    {tech}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-8 pt-4 border-t border-slate-700">
+                                        <a href={project.data.githubUrl} target="_blank" class="text-cyan-400 hover:text-cyan-300 underline text-sm font-semibold inline-flex items-center gap-1">
+                                            View Source Code on GitHub →
+                                        </a>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <p class="text-slate-400 p-6 bg-slate-800 rounded-xl">No hardware projects added yet.</p>
+                )}
+            </div>
+
+            <!-- ================= SOFTWARE SECTION ================= -->
+            <div id="software-section" class="category-section hidden">
+                {softwareProjects.length > 0 ? (
+                    <div class="border border-slate-700 p-6 rounded-2xl bg-slate-800/60 backdrop-blur shadow-2xl">
+                        <h2 class="text-xl font-semibold mb-4 text-cyan-400">Select Software Project:</h2>
+                        
+                        <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-700 pb-4">
+                            {softwareProjects.map((project, idx) => (
+                                <button 
+                                    class={`soft-tab-btn-${idx} px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${idx === 0 ? 'bg-cyan-600 text-white shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'}`}
+                                    onclick={`switchProject('software', ${idx})`}>
+                                    Project {idx + 1}: {project.data.title}
+                                </button>
+                            ))}
+                        </div>
+
+                        {softwareProjects.map(async (project, idx) => {
+                            const { Content } = await render(project);
+                            const mediaList = project.data.media || [];
+                            return (
+                                <div class={`software-proj-pane-${idx} ${idx === 0 ? '' : 'hidden'}`}>
+                                    <div class="flex justify-between items-start mb-4">
+                                        <h3 class="text-2xl font-bold">{project.data.title}</h3>
+                                        <span class="text-xs uppercase tracking-wider px-3 py-1 rounded bg-slate-900 text-cyan-400 font-semibold border border-slate-700">
+                                            Software
+                                        </span>
+                                    </div>
+
+                                    <!-- Inside-Project Tabs -->
+                                    <div class="flex border-b border-slate-700 mb-6">
+                                        <button 
+                                            class={`inner-soft-tab-btn-${idx} px-4 py-2 text-sm font-semibold text-cyan-400 border-b-2 border-cyan-400 transition-all cursor-pointer`}
+                                            onclick={`switchInnerTab('software', ${idx}, 'desc')`}>
+                                            Project Description
+                                        </button>
+                                        <button 
+                                            class={`inner-soft-tab-btn-${idx} px-4 py-2 text-sm font-semibold text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-all cursor-pointer`}
+                                            onclick={`switchInnerTab('software', ${idx}, 'tech')`}>
+                                            Tech Stack
+                                        </button>
+                                    </div>
+
+                                    <!-- Description Pane -->
+                                    <div class={`software-desc-pane-${idx}`}>
+                                        {mediaList.length > 0 && (
+                                            <div class="mb-6 relative bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-lg group">
+                                                <div class="carousel-container relative w-full overflow-hidden flex items-center justify-center min-h-[300px] max-h-[450px]">
+                                                    {mediaList.map((item, mIdx) => (
+                                                        <div class={`carousel-item-soft-${idx} w-full flex items-center justify-center ${mIdx === 0 ? '' : 'hidden'}`} data-index={mIdx}>
+                                                            {item.type === 'image' ? (
+                                                                <img src={item.url} alt="Project Media" class="w-full h-auto object-contain max-h-[420px]" />
+                                                            ) : (
+                                                                <video controls class="w-full h-auto max-h-[420px]">
+                                                                    <source src={item.url} type="video/mp4" />
+                                                                    Your browser does not support the video tag.
+                                                                </video>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {mediaList.length > 1 && (
+                                                    <>
+                                                        <button 
+                                                            class="absolute left-3 top-1/2 -translate-y-1/2 bg-slate-800/80 hover:bg-cyan-600 text-white p-2.5 rounded-full shadow transition-all cursor-pointer"
+                                                            onclick={`moveCarousel('software', ${idx}, -1, ${mediaList.length})`}>
+                                                            ❮
+                                                        </button>
+                                                        <button 
+                                                            class="absolute right-3 top-1/2 -translate-y-1/2 bg-slate-800/80 hover:bg-cyan-600 text-white p-2.5 rounded-full shadow transition-all cursor-pointer"
+                                                            onclick={`moveCarousel('software', ${idx}, 1, ${mediaList.length})`}>
+                                                            ❯
+                                                        </button>
+                                                        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-slate-900/80 px-3 py-1 rounded-full text-xs text-slate-300 border border-slate-700">
+                                                            Media <span class={`carousel-indicator-soft-${idx}`}>1</span> of {mediaList.length}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div class="prose prose-invert max-w-none text-slate-300 leading-relaxed">
+                                            <Content />
+                                        </div>
+                                    </div>
+
+                                    <!-- Tech Stack Pane -->
+                                    <div class={`software-tech-pane-${idx} hidden`}>
+                                        <p class="text-sm text-slate-400 mb-4">Frameworks and languages utilized:</p>
+                                        <div class="flex flex-wrap gap-2 mb-6">
+                                            {project.data.techStack?.map((tech: string) => (
+                                                <span class="bg-slate-900 text-sm px-3.5 py-2 rounded-xl text-slate-300 font-medium border border-slate-700 shadow">
+                                                    {tech}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-8 pt-4 border-t border-slate-700">
+                                        <a href={project.data.githubUrl} target="_blank" class="text-cyan-400 hover:text-cyan-300 underline text-sm font-semibold inline-flex items-center gap-1">
+                                            View Source Code on GitHub →
+                                        </a>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <p class="text-slate-400 p-6 bg-slate-800 rounded-xl">No software projects added yet.</p>
+                )}
+            </div>
+        </main>
+
+        <!-- Script for Carousel and Navigation -->
+        <script is:inline>
+            window.carouselIndexes = {};
+
+            window.moveCarousel = function(category, projectIndex, direction, totalItems) {
+                const key = `${category}-${projectIndex}`;
+                if (window.carouselIndexes[key] === undefined) {
+                    window.carouselIndexes[key] = 0;
+                }
+
+                window.carouselIndexes[key] += direction;
+
+                if (window.carouselIndexes[key] >= totalItems) {
+                    window.carouselIndexes[key] = 0;
+                } else if (window.carouselIndexes[key] < 0) {
+                    window.carouselIndexes[key] = totalItems - 1;
+                }
+
+                const currentIndex = window.carouselIndexes[key];
+                const itemClass = category === 'hardware' ? `carousel-item-${projectIndex}` : `carousel-item-soft-${projectIndex}`;
+                const indicatorClass = category === 'hardware' ? `carousel-indicator-${projectIndex}` : `carousel-indicator-soft-${projectIndex}`;
+
+                const items = document.querySelectorAll(`.${itemClass}`);
+                items.forEach((item, idx) => {
+                    if (idx === currentIndex) {
+                        item.classList.remove('hidden');
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
+
+                const indicator = document.querySelector(`.${indicatorClass}`);
+                if (indicator) {
+                    indicator.textContent = currentIndex + 1;
+                }
+            };
+
+            const mainBtns = document.querySelectorAll('.main-category-btn');
+            const categorySections = document.querySelectorAll('.category-section');
+
+            mainBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    mainBtns.forEach(b => {
+                        b.classList.remove('bg-cyan-600', 'text-white', 'shadow-lg');
+                        b.classList.add('bg-slate-800', 'text-slate-300', 'border', 'border-slate-700');
+                    });
+                    btn.classList.remove('bg-slate-800', 'text-slate-300', 'border', 'border-slate-700');
+                    btn.classList.add('bg-cyan-600', 'text-white', 'shadow-lg');
+
+                    const targetId = btn.getAttribute('data-target');
+                    categorySections.forEach(sec => {
+                        if (sec.id === targetId) {
+                            sec.classList.remove('hidden');
+                        } else {
+                            sec.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            window.switchProject = function(category, index) {
+                const totalPanes = document.querySelectorAll(`div[class^="${category}-proj-pane-"]`);
+                totalPanes.forEach((p, idx) => {
+                    p.classList.add('hidden');
+                    const tabBtn = document.querySelector(`.${category === 'hardware' ? 'proj' : 'soft'}-tab-btn-${idx}`);
+                    if (tabBtn) {
+                        tabBtn.classList.remove('bg-cyan-600', 'text-white', 'shadow');
+                        tabBtn.classList.add('bg-slate-800', 'text-slate-300', 'border', 'border-slate-700');
+                    }
+                });
+
+                const activePane = document.querySelector(`.${category}-proj-pane-${index}`);
+                if (activePane) activePane.classList.remove('hidden');
+
+                const activeTabBtn = document.querySelector(`.${category === 'hardware' ? 'proj' : 'soft'}-tab-btn-${index}`);
+                if (activeTabBtn) {
+                    activeTabBtn.classList.remove('bg-slate-800', 'text-slate-300', 'border', 'border-slate-700');
+                    activeTabBtn.classList.add('bg-cyan-600', 'text-white', 'shadow');
+                }
+            };
+
+            window.switchInnerTab = function(category, index, tabType) {
+                const descPane = document.querySelector(`.${category}-desc-pane-${index}`);
+                const techPane = document.querySelector(`.${category}-tech-pane-${index}`);
+                const tabBtns = document.querySelectorAll(`.${category === 'hardware' ? 'inner-tab-btn' : 'inner-soft-tab-btn'}-${index}`);
+
+                tabBtns.forEach(btn => {
+                    btn.classList.remove('text-cyan-400', 'border-cyan-400');
+                    btn.classList.add('text-slate-400', 'border-transparent');
+                });
+
+                if (tabType === 'desc') {
+                    descPane?.classList.remove('hidden');
+                    techPane?.classList.add('hidden');
+                    tabBtns[0]?.classList.remove('text-slate-400', 'border-transparent');
+                    tabBtns[0]?.classList.add('text-cyan-400', 'border-cyan-400');
+                } else {
+                    descPane?.classList.add('hidden');
+                    techPane?.classList.remove('hidden');
+                    tabBtns[1]?.classList.remove('text-slate-400', 'border-transparent');
+                    tabBtns[1]?.classList.add('text-cyan-400', 'border-cyan-400');
+                }
+            };
+        </script>
+    </body>
+</html>
